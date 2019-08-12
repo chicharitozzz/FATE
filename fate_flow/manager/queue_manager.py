@@ -124,10 +124,10 @@ class InProcessQueue(BaseQueue):
 
 
 def init_job_queue():
-    if WORK_MODE == WorkMode.STANDALONE:
+    if WORK_MODE == WorkMode.STANDALONE or WORK_MODE == WorkMode.SPARK_LOCAL:
         job_queue = InProcessQueue()
         RuntimeConfig.init_config(JOB_QUEUE=job_queue)
-    elif WORK_MODE == WorkMode.CLUSTER:
+    elif WORK_MODE == WorkMode.CLUSTER or WorkMode == WorkMode.SPARK_CLUSTER:
         job_queue = RedisQueue(queue_name='fate_flow_job_queue', host=REDIS['host'], port=REDIS['port'],
                                password=REDIS['password'], max_connections=REDIS['max_connections'])
         RuntimeConfig.init_config(JOB_QUEUE=job_queue)

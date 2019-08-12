@@ -19,6 +19,8 @@ from enum import IntEnum
 class WorkMode(IntEnum):
     STANDALONE = 0
     CLUSTER = 1
+    SPARK_LOCAL = 2
+    SPARK_CLUSTER = 3
 
 
 class JobStatus(object):

@@ -31,9 +31,9 @@ def get_json_result(retcode=0, retmsg='success', data=None, job_id=None, meta=No
 
 def federated_api(job_id, method, endpoint, src_party_id, dest_party_id, json_body, work_mode,
                   overall_timeout=DEFAULT_GRPC_OVERALL_TIMEOUT):
-    if work_mode == WorkMode.STANDALONE:
+    if work_mode == WorkMode.STANDALONE or work_mode == WorkMode.SPARK_LOCAL:
         return local_api(method=method, endpoint=endpoint, json_body=json_body)
-    elif work_mode == WorkMode.CLUSTER:
+    elif work_mode == WorkMode.CLUSTER or work_mode == WorkMode.SPARK_CLUSTER:
         return remote_api(job_id=job_id, method=method, endpoint=endpoint, src_party_id=src_party_id,
                           dest_party_id=dest_party_id, json_body=json_body, overall_timeout=overall_timeout)
     else:

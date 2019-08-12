@@ -49,7 +49,7 @@ class BaseDataBase(object):
     def __init__(self):
         database_config = DATABASE.copy()
         db_name = database_config.pop("name")
-        if WORK_MODE == WorkMode.STANDALONE:
+        if WORK_MODE == WorkMode.STANDALONE or WORK_MODE == WorkMode.SPARK_LOCAL:
             if USE_LOCAL_DATABASE:
                 self.database_connection = APSWDatabase('fate_flow_sqlite.db')
                 RuntimeConfig.init_config(USE_LOCAL_DATABASE=True)
@@ -58,7 +58,7 @@ class BaseDataBase(object):
                 self.database_connection = PooledMySQLDatabase(db_name, **database_config)
                 stat_logger.info('init mysql database on standalone mode successfully')
                 RuntimeConfig.init_config(USE_LOCAL_DATABASE=False)
-        elif WORK_MODE == WorkMode.CLUSTER:
+        elif WORK_MODE == WorkMode.CLUSTER or WORK_MODE == WorkMode.SPARK_CLUSTER:
             self.database_connection = PooledMySQLDatabase(db_name, **database_config)
             stat_logger.info('init mysql database on cluster mode successfully')
             RuntimeConfig.init_config(USE_LOCAL_DATABASE=False)
@@ -66,7 +66,7 @@ class BaseDataBase(object):
             raise Exception('can not init database')
 
 
-if __main__.__file__ == 'fate_flow_server.py':
+if __main__.__file__.endswith('fate_flow_server.py'):
     DB = BaseDataBase().database_connection
 else:
     # Initialize the database only when the server is started.
