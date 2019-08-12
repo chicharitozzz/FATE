@@ -15,6 +15,7 @@
 #
 
 from arch.api import RuntimeInstance
+
 from arch.api import WorkMode
 from arch.api.standalone import federation as standalone_federation
 from arch.api.cluster import federation as cluster_federation
@@ -44,9 +45,17 @@ def init(job_id, runtime_conf, server_conf_path="arch/conf/server_conf.json"):
         raise EnvironmentError("eggroll should be initialized before federation")
     if RuntimeInstance.MODE == WorkMode.STANDALONE:
         RuntimeInstance.FEDERATION = standalone_federation.init(job_id=job_id, runtime_conf=runtime_conf)
-    else:
+    elif RuntimeInstance.MODE == WorkMode.CLUSTER:
         RuntimeInstance.FEDERATION = cluster_federation.init(job_id=job_id, runtime_conf=runtime_conf,
                                                              server_conf_path=server_conf_path)
+    elif RuntimeInstance.MODE == WorkMode.SPARK_LOCAL:
+        from arch.api.table.pyspark.standalone.federation import FederationRuntime
+        RuntimeInstance.FEDERATION = FederationRuntime(job_id=job_id, runtime_conf=runtime_conf)
+
+    else:
+        from arch.api.table.pyspark.cluster.federation import FederationRuntime
+        RuntimeInstance.FEDERATION = FederationRuntime(job_id=job_id, runtime_conf=runtime_conf,
+                                                       server_conf_path=server_conf_path)
 
 
 def get(name, tag: str, idx=-1):
@@ -75,4 +84,3 @@ def remote(obj, name: str, tag: str, role=None, idx=-1):
 
 def get_runtime_conf():
     return RuntimeInstance.FEDERATION.runtime_conf
-

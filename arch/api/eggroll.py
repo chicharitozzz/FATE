@@ -14,17 +14,23 @@
 #  limitations under the License.
 #
 
-from arch.api.utils.log_utils import LoggerFactory
-from arch.api.utils import file_utils
-from typing import Iterable
-import uuid
 import os
-from arch.api import WorkMode, NamingPolicy
+import uuid
+from typing import Iterable
+
 from arch.api import RuntimeInstance
+from arch.api import WorkMode, NamingPolicy
 from arch.api.core import EggRollContext
+from arch.api.utils import file_utils
+from arch.api.utils.log_utils import LoggerFactory
+from arch.api.table.abc.table import Table
 
 
-def init(job_id=None, mode: WorkMode = WorkMode.STANDALONE, naming_policy: NamingPolicy = NamingPolicy.DEFAULT):
+# noinspection PyProtectedMember
+def init(job_id=None,
+         mode: WorkMode = WorkMode.STANDALONE,
+         naming_policy: NamingPolicy = NamingPolicy.DEFAULT,
+         master=None):
     if RuntimeInstance.EGGROLL:
         return
     if job_id is None:
@@ -43,14 +49,19 @@ def init(job_id=None, mode: WorkMode = WorkMode.STANDALONE, naming_policy: Namin
         from arch.api.cluster.eggroll import init as c_init
         c_init(job_id, eggroll_context=eggroll_context)
         RuntimeInstance.EGGROLL = _EggRoll.get_instance()
-    else:
-        from arch.api.cluster import simple_roll
-        simple_roll.init(job_id)
-        RuntimeInstance.EGGROLL = simple_roll.EggRoll.get_instance()
-    RuntimeInstance.EGGROLL.table("__federation__", job_id, partition=10)
+    elif mode == WorkMode.SPARK_LOCAL:
+        from arch.api.table.pyspark.standalone.table_manager import RDDTableManager
+        rdd_manager = RDDTableManager(job_id=job_id, eggroll_context=eggroll_context)
+        RuntimeInstance.EGGROLL = rdd_manager
+    elif mode == WorkMode.SPARK_CLUSTER:
+        from arch.api.table.pyspark.cluster.table_manager import RDDTableManager
+        rdd_manager = RDDTableManager(job_id=job_id, eggroll_context=eggroll_context, master=master)
+        RuntimeInstance.EGGROLL = rdd_manager
+    table("__federation__", job_id, partition=10)
 
 
-def table(name, namespace, partition=1, persistent=True, create_if_missing=True, error_if_exist=False, in_place_computing=False):
+def table(name, namespace, partition=1, persistent=True, create_if_missing=True, error_if_exist=False,
+          in_place_computing=False) -> Table:
     return RuntimeInstance.EGGROLL.table(name=name,
                                          namespace=namespace,
                                          partition=partition,
@@ -59,18 +70,22 @@ def table(name, namespace, partition=1, persistent=True, create_if_missing=True,
 
 
 def parallelize(data: Iterable, include_key=False, name=None, partition=1, namespace=None, persistent=False,
-                create_if_missing=True, error_if_exist=False, chunk_size=100000, in_place_computing=False):
+                create_if_missing=True, error_if_exist=False, chunk_size=100000, in_place_computing=False) -> Table:
     return RuntimeInstance.EGGROLL.parallelize(data=data, include_key=include_key, name=name, partition=partition,
                                                namespace=namespace,
                                                persistent=persistent,
                                                chunk_size=chunk_size,
                                                in_place_computing=in_place_computing)
 
+
 def cleanup(name, namespace, persistent=False):
     return RuntimeInstance.EGGROLL.cleanup(name=name, namespace=namespace, persistent=persistent)
 
+
+# noinspection PyPep8Naming
 def generateUniqueId():
     return RuntimeInstance.EGGROLL.generateUniqueId()
+
 
 def get_job_id():
     return RuntimeInstance.EGGROLL.job_id

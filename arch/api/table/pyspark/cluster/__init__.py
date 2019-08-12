@@ -13,28 +13,3 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
-from enum import IntEnum, Enum
-
-
-class WorkMode(IntEnum):
-    STANDALONE = 0
-    CLUSTER = 1
-    SPARK_LOCAL = 2
-    SPARK_CLUSTER = 3
-
-
-class RuntimeInstance(object):
-    EGGROLL = None
-    MODE = None
-    FEDERATION = None
-
-
-class StoreType(Enum):
-    IN_MEMORY = "IN_MEMORY"
-    LMDB = "LMDB"
-
-
-class NamingPolicy(Enum):
-    DEFAULT = 'DEFAULT'
-    ITER_AWARE = 'ITER_AWARE'

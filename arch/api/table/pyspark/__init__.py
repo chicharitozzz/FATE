@@ -14,27 +14,19 @@
 #  limitations under the License.
 #
 
-from enum import IntEnum, Enum
+from pyspark import RDD
+from pyspark.storagelevel import StorageLevel
+
+STORAGE_LEVEL = StorageLevel.MEMORY_AND_DISK
+
+_RDD_ATTR_NAME = "_rdd"
+_EGGROLL_CLIENT = "_eggroll_client"
 
 
-class WorkMode(IntEnum):
-    STANDALONE = 0
-    CLUSTER = 1
-    SPARK_LOCAL = 2
-    SPARK_CLUSTER = 3
+def materialize(rdd: RDD):
+    rdd.persist(STORAGE_LEVEL)
+    rdd.mapPartitionsWithIndex(lambda ind, it: (1,)).collect()
+    return rdd
 
 
-class RuntimeInstance(object):
-    EGGROLL = None
-    MODE = None
-    FEDERATION = None
-
-
-class StoreType(Enum):
-    IN_MEMORY = "IN_MEMORY"
-    LMDB = "LMDB"
-
-
-class NamingPolicy(Enum):
-    DEFAULT = 'DEFAULT'
-    ITER_AWARE = 'ITER_AWARE'
+__all__ = ["STORAGE_LEVEL", "materialize", "_RDD_ATTR_NAME", "_EGGROLL_CLIENT"]
