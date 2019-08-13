@@ -30,18 +30,19 @@ class RDDTable(Table):
 
     # noinspection PyProtectedMember
     @classmethod
-    def from_dtable(cls, dtable: DTable):
+    def from_dtable(cls, job_id: str, dtable: DTable):
         namespace = dtable._namespace
         name = dtable._name
         partitions = dtable._partitions
-        return RDDTable(namespace=namespace, name=name, partitions=partitions, dtable=dtable)
+        return RDDTable(job_id=job_id, namespace=namespace, name=name, partitions=partitions, dtable=dtable)
 
     @classmethod
-    def from_rdd(cls, rdd: RDD, namespace: str, name: str):
+    def from_rdd(cls, rdd: RDD, job_id: str, namespace: str, name: str):
         partitions = rdd.getNumPartitions()
-        return RDDTable(namespace=namespace, name=name, partitions=partitions, rdd=rdd)
+        return RDDTable(job_id=job_id, namespace=namespace, name=name, partitions=partitions, rdd=rdd)
 
-    def __init__(self, namespace: str,
+    def __init__(self, job_id: str,
+                 namespace: str,
                  name: str = None,
                  partitions: int = 1,
                  rdd: RDD = None,
@@ -55,11 +56,26 @@ class RDDTable(Table):
         self.schema = {}  # todo: ???
         self._name = name or str(uuid.uuid1())
         self._namespace = namespace
+        self._job_id = job_id
 
-    def _new_from_rdd(self, rdd: RDD, name=None):
+    def __str__(self):
+        return f"{self._namespace}, {self._name}, {self._dtable}"
+
+    def __repr__(self):
+        return f"{self._namespace}, {self._name}, {self._dtable}"
+
+    def _tmp_table_from_rdd(self, rdd: RDD, name=None):
+        """
+        tmp table, with namespace == job_id
+        """
         rdd = materialize(rdd)
         name = name or str(uuid.uuid1())
-        return RDDTable(namespace=self._namespace, name=name, partitions=rdd.getNumPartitions(), rdd=rdd, dtable=None)
+        return RDDTable(job_id=self._job_id,
+                        namespace=self._namespace,
+                        name=name,
+                        partitions=rdd.getNumPartitions(),
+                        rdd=rdd,
+                        dtable=None)
 
     # self._rdd should not be pickled(spark requires all transformer/action to be invoked in driver).
     def __getstate__(self):
@@ -74,21 +90,8 @@ class RDDTable(Table):
         assert namespace is not None, "namespace is None"
         assert partitions > 0, "invalid partitions={0}".format(partitions)
 
-    def get_partitions(self):
-        return self._partitions
-
-    def get_name(self):
-        return self._name
-
-    def get_namespace(self):
-        return self._namespace
-
     # noinspection PyProtectedMember
-    @property
     def rdd(self):
-        """
-        todo: storage -> rdd, to be optimized
-        """
         if hasattr(self, "_rdd") and self._rdd is not None:
             return self._rdd
 
@@ -98,13 +101,13 @@ class RDDTable(Table):
         storage_iterator = self._dtable.collect(use_serialize=True)
         if self._dtable.count() <= 0:
             storage_iterator = []
+
         num_partition = self._dtable._partitions
         self._rdd = SparkContext.getOrCreate() \
             .parallelize(storage_iterator, num_partition) \
             .persist(STORAGE_LEVEL)
         return self._rdd
 
-    @property
     def dtable(self):
         """
         rdd -> storage
@@ -114,81 +117,86 @@ class RDDTable(Table):
         else:
             if not hasattr(self, "_rdd") or self._rdd is None:
                 raise AssertionError("try create rdd from None storage")
-            self._dtable = \
-                self.save_as(name=self._name, namespace=self._namespace, partition=self._partitions)._dtable
+            self._dtable = self.save_as(name=self._name,
+                                        namespace=self._namespace,
+                                        partition=self._partitions,
+                                        persistent=False)._dtable
         return self._dtable
+
+    def get_partitions(self):
+        return self._partitions
 
     def map(self, func):
         from arch.api.table.pyspark.cluster.rdd_func import _map
-        rtn_rdd = _map(self.rdd, func)
-        return self._new_from_rdd(rtn_rdd)
+        rtn_rdd = _map(self.rdd(), func)
+        return self._tmp_table_from_rdd(rtn_rdd)
 
     def mapValues(self, func):
         from arch.api.table.pyspark.cluster.rdd_func import _map_value
-        rtn_rdd = _map_value(self.rdd, func)
-        return self._new_from_rdd(rtn_rdd)
+        rtn_rdd = _map_value(self.rdd(), func)
+        return self._tmp_table_from_rdd(rtn_rdd)
 
     def mapPartitions(self, func):
         from arch.api.table.pyspark.cluster.rdd_func import _map_partitions
-        rtn_rdd = _map_partitions(self.rdd, func)
-        return self._new_from_rdd(rtn_rdd)
+        rtn_rdd = _map_partitions(self.rdd(), func)
+        return self._tmp_table_from_rdd(rtn_rdd)
 
     def reduce(self, func):
-        return self.rdd.values().reduce(func)
+        return self.rdd().values().reduce(func)
 
     def join(self, other, func=None):
         from arch.api.table.pyspark.cluster.rdd_func import _join
-        return self._new_from_rdd(_join(self.rdd, other.rdd, func))
+        return self._tmp_table_from_rdd(_join(self.rdd(), other.rdd(), func))
 
     def glom(self):
         from arch.api.table.pyspark.cluster.rdd_func import _glom
-        return self._new_from_rdd(_glom(self.rdd))
+        return self._tmp_table_from_rdd(_glom(self.rdd()))
 
     def sample(self, fraction, seed=None):
         from arch.api.table.pyspark.cluster.rdd_func import _sample
-        return self._new_from_rdd(_sample(self.rdd, fraction, seed))
+        return self._tmp_table_from_rdd(_sample(self.rdd(), fraction, seed))
 
     def subtractByKey(self, other):
         from arch.api.table.pyspark.cluster.rdd_func import _subtract_by_key
-        return self._new_from_rdd(_subtract_by_key(self.rdd, other.rdd))
+        return self._tmp_table_from_rdd(_subtract_by_key(self.rdd(), other.rdd))
 
     def filter(self, func):
         from arch.api.table.pyspark.cluster.rdd_func import _filter
-        return self._new_from_rdd(_filter(self.rdd, func))
+        return self._tmp_table_from_rdd(_filter(self.rdd(), func))
 
     def union(self, other, func=lambda v1, v2: v1):
         from arch.api.table.pyspark.cluster.rdd_func import _union
-        return self._new_from_rdd(_union(self.rdd, other.rdd, func))
+        return self._tmp_table_from_rdd(_union(self.rdd(), other.rdd, func))
 
     def flatMap(self, func):
         from arch.api.table.pyspark.cluster.rdd_func import _flat_map
-        return self._new_from_rdd(_flat_map(self.rdd, func))
+        return self._tmp_table_from_rdd(_flat_map(self.rdd(), func))
 
     def collect(self, min_chunk_size=0, use_serialize=True):
         if self._dtable:
-            return self.dtable.collect(min_chunk_size, use_serialize)
+            return self._dtable.collect(min_chunk_size, use_serialize)
         else:
-            return iter(self.rdd.collect())
+            return iter(self.rdd().collect())
 
     """
     storage api
     """
 
     def put(self, k, v, use_serialize=True):
-        rtn = self.dtable.put(k, v, use_serialize)
+        rtn = self.dtable().put(k, v, use_serialize)
         self._rdd = None
         return rtn
 
     def put_all(self, kv_list: Iterable, use_serialize=True, chunk_size=100000):
-        rtn = self.dtable.put_all(kv_list, use_serialize, chunk_size)
+        rtn = self.dtable().put_all(kv_list, use_serialize, chunk_size)
         self._rdd = None
         return rtn
 
     def get(self, k, use_serialize=True):
-        return self.dtable.get(k, use_serialize)
+        return self.dtable().get(k, use_serialize)
 
     def delete(self, k, use_serialize=True):
-        rtn = self.dtable.delete(k, use_serialize)
+        rtn = self.dtable().delete(k, use_serialize)
         self._rdd = None
         return rtn
 
@@ -200,7 +208,7 @@ class RDDTable(Table):
         return True
 
     def put_if_absent(self, k, v, use_serialize=True):
-        rtn = self.dtable.put_if_absent(k, v, use_serialize)
+        rtn = self.dtable().put_if_absent(k, v, use_serialize)
         self._rdd = None
         return rtn
 
@@ -225,12 +233,11 @@ class RDDTable(Table):
             return self._rdd.count()
 
     # noinspection PyProtectedMember
-    def save_as(self, name, namespace, partition=None, use_serialize=True, persistent=False) -> 'RDDTable':
+    def save_as(self, name, namespace, partition=None, use_serialize=True, persistent=True) -> 'RDDTable':
         partition = partition or self._partitions
         if self._dtable:
-            _dtable = self._dtable.save_as(name, namespace, partition,
-                                           use_serialize=use_serialize, persistent=persistent)
-            return RDDTable.from_dtable(_dtable)
+            _dtable = self._dtable.save_as(name, namespace, partition, use_serialize=use_serialize)
+            return RDDTable.from_dtable(job_id=self._job_id, dtable=_dtable)
         else:
             from arch.api.table.pyspark.cluster.rdd_func import _save_as_func
             return _save_as_func(self._rdd, name=name, namespace=namespace, partition=partition, persistent=persistent)

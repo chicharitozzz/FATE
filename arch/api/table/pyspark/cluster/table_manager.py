@@ -69,7 +69,7 @@ class RDDTableManager(TableManager):
         from arch.api.cluster.eggroll import init
         from arch.api.cluster.eggroll import _EggRoll
         if _EggRoll.instance is None:
-            init(self._job_id, server_conf_path=server_conf_path, eggroll_context=self._eggroll_context)
+            init(self.job_id, server_conf_path=server_conf_path, eggroll_context=self._eggroll_context)
         self._eggroll: _EggRoll = _EggRoll.instance
 
     def table(self,
@@ -80,7 +80,7 @@ class RDDTableManager(TableManager):
               in_place_computing):
         dtable = self._eggroll.table(name=name, namespace=namespace, partition=partition,
                                      persistent=persistent, in_place_computing=in_place_computing)
-        return RDDTable.from_dtable(dtable)
+        return RDDTable.from_dtable(job_id=self.job_id, dtable=dtable)
 
     def parallelize(self,
                     data: Iterable,
@@ -95,8 +95,8 @@ class RDDTableManager(TableManager):
         rdd = self._sc.parallelize(_iter, partition)
         rdd = materialize(rdd)
         if namespace is None:
-            namespace = self._job_id
-        return RDDTable.from_rdd(rdd=rdd, namespace=namespace, name=name)
+            namespace = self.job_id
+        return RDDTable.from_rdd(rdd=rdd, job_id=self.job_id, namespace=namespace, name=name)
 
     def cleanup(self, name, namespace, persistent):
         return self._eggroll.cleanup(name=name, namespace=namespace, persistent=persistent)
