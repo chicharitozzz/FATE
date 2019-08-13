@@ -21,7 +21,7 @@ from arch.api.utils.log_utils import LoggerFactory
 LOGGER = LoggerFactory.get_logger("PROFILING")
 
 
-def log_elapse(func):
+def log_elapsed(func):
     func_name = func.__name__
 
     def _fn(*args, **kwargs):
