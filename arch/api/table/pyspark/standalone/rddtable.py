@@ -24,9 +24,8 @@ from arch.api.standalone.eggroll import _DTable as DTable
 from arch.api.table.abc.table import Table
 from arch.api.table.pyspark import _RDD_ATTR_NAME
 from arch.api.table.pyspark import materialize, STORAGE_LEVEL
-from arch.api.utils.log_utils import LoggerFactory
 
-LOGGER = LoggerFactory.get_logger()
+from arch.api.utils.profile_util import log_elapsed
 
 
 class RDDTable(Table):
@@ -89,7 +88,6 @@ class RDDTable(Table):
         assert namespace is not None, "namespace is None"
         assert partitions > 0, "invalid partitions={0}".format(partitions)
 
-    # noinspection PyProtectedMember
     def rdd(self):
         if hasattr(self, "_rdd") and self._rdd is not None:
             return self._rdd
@@ -97,6 +95,11 @@ class RDDTable(Table):
         if self._dtable is None:
             raise AssertionError("try create rdd from None storage")
 
+        return self._rdd_from_dtable()
+
+    # noinspection PyProtectedMember
+    @log_elapsed
+    def _rdd_from_dtable(self):
         storage_iterator = self._dtable.collect(use_serialize=True)
         if self._dtable.count() <= 0:
             storage_iterator = []
@@ -117,61 +120,77 @@ class RDDTable(Table):
         else:
             if not hasattr(self, "_rdd") or self._rdd is None:
                 raise AssertionError("try create dtable from None")
-            self._dtable = self.save_as(name=self._name,
-                                        namespace=self._namespace,
-                                        partition=self._partitions,
-                                        persistent=False)._dtable
+            return self._dtable_from_rdd()
+
+    @log_elapsed
+    def _dtable_from_rdd(self):
+        self._dtable = self.save_as(name=self._name,
+                                    namespace=self._namespace,
+                                    partition=self._partitions,
+                                    persistent=False)._dtable
         return self._dtable
 
     def get_partitions(self):
         return self._partitions
 
+    @log_elapsed
     def map(self, func):
         from arch.api.table.pyspark.standalone.rdd_func import _map
         rtn_rdd = _map(self.rdd(), func)
         return self._tmp_table_from_rdd(rtn_rdd)
 
+    @log_elapsed
     def mapValues(self, func):
         from arch.api.table.pyspark.standalone.rdd_func import _map_value
         rtn_rdd = _map_value(self.rdd(), func)
         return self._tmp_table_from_rdd(rtn_rdd)
 
+    @log_elapsed
     def mapPartitions(self, func):
         from arch.api.table.pyspark.standalone.rdd_func import _map_partitions
         rtn_rdd = _map_partitions(self.rdd(), func)
         return self._tmp_table_from_rdd(rtn_rdd)
 
+    @log_elapsed
     def reduce(self, func):
         return self.rdd().values().reduce(func)
 
+    @log_elapsed
     def join(self, other, func=None):
         from arch.api.table.pyspark.standalone.rdd_func import _join
         return self._tmp_table_from_rdd(_join(self.rdd(), other.rdd(), func))
 
+    @log_elapsed
     def glom(self):
         from arch.api.table.pyspark.standalone.rdd_func import _glom
         return self._tmp_table_from_rdd(_glom(self.rdd()))
 
+    @log_elapsed
     def sample(self, fraction, seed=None):
         from arch.api.table.pyspark.standalone.rdd_func import _sample
         return self._tmp_table_from_rdd(_sample(self.rdd(), fraction, seed))
 
+    @log_elapsed
     def subtractByKey(self, other):
         from arch.api.table.pyspark.standalone.rdd_func import _subtract_by_key
         return self._tmp_table_from_rdd(_subtract_by_key(self.rdd(), other.rdd()))
 
+    @log_elapsed
     def filter(self, func):
         from arch.api.table.pyspark.standalone.rdd_func import _filter
         return self._tmp_table_from_rdd(_filter(self.rdd(), func))
 
+    @log_elapsed
     def union(self, other, func=lambda v1, v2: v1):
         from arch.api.table.pyspark.standalone.rdd_func import _union
         return self._tmp_table_from_rdd(_union(self.rdd(), other.rdd(), func))
 
+    @log_elapsed
     def flatMap(self, func):
         from arch.api.table.pyspark.standalone.rdd_func import _flat_map
         return self._tmp_table_from_rdd(_flat_map(self.rdd(), func))
 
+    @log_elapsed
     def collect(self, min_chunk_size=0, use_serialize=True):
         if self._dtable:
             return self._dtable.collect(min_chunk_size, use_serialize)
@@ -232,12 +251,11 @@ class RDDTable(Table):
         else:
             return self._rdd.count()
 
-    # noinspection PyProtectedMember
+    @log_elapsed
     def save_as(self, name, namespace, partition=None, use_serialize=True, persistent=True) -> 'RDDTable':
         partition = partition or self._partitions
         if self._dtable:
-            _dtable = self._dtable.save_as(name, namespace, partition,
-                                           use_serialize=use_serialize)
+            _dtable = self._dtable.save_as(name, namespace, partition, use_serialize=use_serialize)
             return RDDTable.from_dtable(job_id=self._job_id, dtable=_dtable)
         else:
             from arch.api.table.pyspark.standalone.rdd_func import _save_as_func

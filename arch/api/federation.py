@@ -20,6 +20,8 @@ from arch.api import WorkMode
 from arch.api.standalone import federation as standalone_federation
 from arch.api.cluster import federation as cluster_federation
 
+from arch.api.utils.profile_util import log_elapsed
+
 
 def init(job_id, runtime_conf, server_conf_path="arch/conf/server_conf.json"):
     """
@@ -58,6 +60,7 @@ def init(job_id, runtime_conf, server_conf_path="arch/conf/server_conf.json"):
                                                        server_conf_path=server_conf_path)
 
 
+@log_elapsed
 def get(name, tag: str, idx=-1):
     """
     This method will block until the remote object is fetched.
@@ -66,9 +69,11 @@ def get(name, tag: str, idx=-1):
     :param idx: idx of the party_ids in runtime role list, if out-of-range, list of all objects will be returned.
     :return: The object itself if idx is in range, else return list of all objects from possible source.
     """
+
     return RuntimeInstance.FEDERATION.get(name=name, tag=tag, idx=idx)
 
 
+@log_elapsed
 def remote(obj, name: str, tag: str, role=None, idx=-1):
     """
     This method will send an object to other parties

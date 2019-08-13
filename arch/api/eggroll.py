@@ -25,6 +25,8 @@ from arch.api.utils import file_utils
 from arch.api.utils.log_utils import LoggerFactory
 from arch.api.table.abc.table import Table
 
+from arch.api.utils.profile_util import log_elapsed
+
 
 # noinspection PyProtectedMember
 def init(job_id=None,
@@ -60,6 +62,7 @@ def init(job_id=None,
     table("__federation__", job_id, partition=10)
 
 
+@log_elapsed
 def table(name, namespace, partition=1, persistent=True, create_if_missing=True, error_if_exist=False,
           in_place_computing=False) -> Table:
     return RuntimeInstance.EGGROLL.table(name=name,
@@ -69,6 +72,7 @@ def table(name, namespace, partition=1, persistent=True, create_if_missing=True,
                                          in_place_computing=in_place_computing)
 
 
+@log_elapsed
 def parallelize(data: Iterable, include_key=False, name=None, partition=1, namespace=None, persistent=False,
                 create_if_missing=True, error_if_exist=False, chunk_size=100000, in_place_computing=False) -> Table:
     return RuntimeInstance.EGGROLL.parallelize(data=data, include_key=include_key, name=name, partition=partition,
