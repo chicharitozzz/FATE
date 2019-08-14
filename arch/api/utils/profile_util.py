@@ -28,5 +28,5 @@ def log_elapsed(func):
         t = time.time()
         rtn = func(*args, **kwargs)
         LOGGER.debug(f"{func_name} takes {time.time() - t}s")
-
+        return rtn
     return _fn

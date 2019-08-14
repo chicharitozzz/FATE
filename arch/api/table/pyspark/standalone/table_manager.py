@@ -39,8 +39,7 @@ class RDDTableManager(TableManger):
         self._eggroll = _to_serializable(self._eggroll)
 
         # init PySpark
-        conf = SparkConf().setAppName("FATE-PySpark-{job_id}".format(job_id=job_id))
-        sc = SparkContext.getOrCreate(conf)
+        sc = SparkContext.getOrCreate()
         self._sc = sc
         self.job_id = job_id
 
