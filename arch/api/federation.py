@@ -17,8 +17,6 @@
 from arch.api import RuntimeInstance
 
 from arch.api import WorkMode
-from arch.api.standalone import federation as standalone_federation
-from arch.api.cluster import federation as cluster_federation
 
 from arch.api.utils.profile_util import log_elapsed
 
@@ -46,10 +44,12 @@ def init(job_id, runtime_conf, server_conf_path="arch/conf/server_conf.json"):
     if RuntimeInstance.MODE is None:
         raise EnvironmentError("eggroll should be initialized before federation")
     if RuntimeInstance.MODE == WorkMode.STANDALONE:
-        RuntimeInstance.FEDERATION = standalone_federation.init(job_id=job_id, runtime_conf=runtime_conf)
+        from arch.api.table.eggroll.standalone.federation import FederationRuntime
+        RuntimeInstance.FEDERATION = FederationRuntime(job_id=job_id, runtime_conf=runtime_conf)
     elif RuntimeInstance.MODE == WorkMode.CLUSTER:
-        RuntimeInstance.FEDERATION = cluster_federation.init(job_id=job_id, runtime_conf=runtime_conf,
-                                                             server_conf_path=server_conf_path)
+        from arch.api.table.eggroll.cluster.federation import FederationRuntime
+        RuntimeInstance.FEDERATION = FederationRuntime(job_id=job_id, runtime_conf=runtime_conf,
+                                                       server_conf_path=server_conf_path)
     elif RuntimeInstance.MODE == WorkMode.SPARK_LOCAL:
         from arch.api.table.pyspark.standalone.federation import FederationRuntime
         RuntimeInstance.FEDERATION = FederationRuntime(job_id=job_id, runtime_conf=runtime_conf)

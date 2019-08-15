@@ -58,6 +58,6 @@ class FederationRuntime(object):
     # noinspection PyProtectedMember
     def remote(self, obj, name: str, tag: str, role=None, idx=-1):
         if isinstance(obj, DTable):
-            return self._eggroll_federation.remote(obj=obj._dtable(), name=name, tag=tag, role=role, idx=idx)
+            return self._eggroll_federation.remote(obj=obj._dtable, name=name, tag=tag, role=role, idx=idx)
 
         return self._eggroll_federation.remote(obj=obj, name=name, tag=tag, role=role, idx=idx)
