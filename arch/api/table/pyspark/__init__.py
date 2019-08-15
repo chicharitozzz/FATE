@@ -17,6 +17,7 @@
 from pyspark import RDD
 from pyspark.storagelevel import StorageLevel
 
+# noinspection PyUnresolvedReferences
 STORAGE_LEVEL = StorageLevel.MEMORY_AND_DISK
 
 _RDD_ATTR_NAME = "_rdd"
@@ -29,4 +30,20 @@ def materialize(rdd: RDD):
     return rdd
 
 
-__all__ = ["STORAGE_LEVEL", "materialize", "_RDD_ATTR_NAME", "_EGGROLL_CLIENT"]
+class JobDesc(object):
+    def __init__(self, desc, **kwargs):
+        if "msg" in kwargs:
+            self._desc = f"{desc}: {kwargs['msg']}"
+        else:
+            self._desc = desc
+
+    def __enter__(self):
+        import pyspark
+        pyspark.SparkContext.getOrCreate().setLocalProperty("spark.job.description", self._desc)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        import pyspark
+        pyspark.SparkContext.getOrCreate().setLocalProperty("spark.job.description", "")
+
+
+__all__ = ["STORAGE_LEVEL", "materialize", "_RDD_ATTR_NAME", "_EGGROLL_CLIENT", "JobDesc"]

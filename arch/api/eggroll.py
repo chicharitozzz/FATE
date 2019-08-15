@@ -44,13 +44,17 @@ def init(job_id=None,
 
     eggroll_context = EggRollContext(naming_policy=naming_policy)
     if mode == WorkMode.STANDALONE:
-        from arch.api.standalone.eggroll import Standalone
-        RuntimeInstance.EGGROLL = Standalone(job_id=job_id, eggroll_context=eggroll_context)
+        # from arch.api.standalone.eggroll import Standalone
+        # RuntimeInstance.EGGROLL = Standalone(job_id=job_id, eggroll_context=eggroll_context)
+        from arch.api.table.eggroll.standalone.table_manager import DTableManager
+        RuntimeInstance.EGGROLL = DTableManager(job_id=job_id, eggroll_context=eggroll_context)
     elif mode == WorkMode.CLUSTER:
-        from arch.api.cluster.eggroll import _EggRoll
-        from arch.api.cluster.eggroll import init as c_init
-        c_init(job_id, eggroll_context=eggroll_context)
-        RuntimeInstance.EGGROLL = _EggRoll.get_instance()
+        # from arch.api.cluster.eggroll import _EggRoll
+        # from arch.api.cluster.eggroll import init as c_init
+        # c_init(job_id, eggroll_context=eggroll_context)
+        # RuntimeInstance.EGGROLL = _EggRoll.get_instance()
+        from arch.api.table.eggroll.cluster.table_manager import DTableManager
+        RuntimeInstance.EGGROLL = DTableManager(job_id=job_id, eggroll_context=eggroll_context)
     elif mode == WorkMode.SPARK_LOCAL:
         from arch.api.table.pyspark.standalone.table_manager import RDDTableManager
         rdd_manager = RDDTableManager(job_id=job_id, eggroll_context=eggroll_context)

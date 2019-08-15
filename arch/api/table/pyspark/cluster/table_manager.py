@@ -103,4 +103,3 @@ class RDDTableManager(TableManager):
 
     def generateUniqueId(self):
         return self._eggroll.generateUniqueId()
-

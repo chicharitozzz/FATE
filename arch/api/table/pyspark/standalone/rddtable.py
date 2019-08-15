@@ -95,19 +95,19 @@ class RDDTable(Table):
         if self._dtable is None:
             raise AssertionError("try create rdd from None storage")
 
-        return self._rdd_from_dtable()
+        return self._dtable_to_rdd()
 
     # noinspection PyProtectedMember
     @log_elapsed
-    def _rdd_from_dtable(self):
+    def _dtable_to_rdd(self):
         storage_iterator = self._dtable.collect(use_serialize=True)
         if self._dtable.count() <= 0:
             storage_iterator = []
 
         num_partition = self._dtable._partitions
         self._rdd = SparkContext.getOrCreate() \
-            .parallelize(storage_iterator, num_partition) \
-            .persist(STORAGE_LEVEL)
+            .parallelize(storage_iterator, num_partition)
+        self._rdd = materialize(self._rdd)
         return self._rdd
 
     # noinspection PyProtectedMember
@@ -120,10 +120,10 @@ class RDDTable(Table):
         else:
             if not hasattr(self, "_rdd") or self._rdd is None:
                 raise AssertionError("try create dtable from None")
-            return self._dtable_from_rdd()
+            return self._rdd_to_dtable()
 
     @log_elapsed
-    def _dtable_from_rdd(self):
+    def _rdd_to_dtable(self):
         self._dtable = self.save_as(name=self._name,
                                     namespace=self._namespace,
                                     partition=self._partitions,

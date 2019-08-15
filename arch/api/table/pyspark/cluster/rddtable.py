@@ -54,7 +54,7 @@ class RDDTable(Table):
         self._rdd = rdd
         self._partitions = partitions
         self._dtable = dtable
-        self.schema = {}  # todo: ???
+        self.schema = {}
         self._name = name or str(uuid.uuid1())
         self._namespace = namespace
         self._job_id = job_id
@@ -122,10 +122,10 @@ class RDDTable(Table):
         else:
             if not hasattr(self, "_rdd") or self._rdd is None:
                 raise AssertionError("try create dtable from None")
-            return self._dtable_from_rdd()
+            return self._rdd_to_dtable()
 
     @log_elapsed
-    def _dtable_from_rdd(self):
+    def _rdd_to_dtable(self):
         self._dtable = self.save_as(name=self._name,
                                     namespace=self._namespace,
                                     partition=self._partitions,

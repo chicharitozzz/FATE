@@ -15,28 +15,28 @@
 #
 
 # noinspection PyProtectedMember
-from arch.api.cluster.eggroll import _DTable
-from arch.api.cluster.federation import init
-from arch.api.table.pyspark.cluster.rddtable import RDDTable
+from arch.api.standalone.eggroll import _DTable
+from arch.api.standalone.federation import init
+from arch.api.table.eggroll.wrapped_dtable import DTable
 
 
 class FederationRuntime(object):
 
-    def __init__(self, job_id, runtime_conf, server_conf_path):
-
-        self._eggroll_federation = init(job_id, runtime_conf, server_conf_path)
-        self.job_id = job_id
+    def __init__(self, job_id, runtime_conf):
+        self._eggroll_federation = init(job_id=job_id, runtime_conf=runtime_conf)
+        self.runtime_conf = runtime_conf
+        self._job_id = job_id
 
     def _get_all(self, name, tag):
         rtn = self._eggroll_federation.get(name=name, tag=tag, idx=-1)
         if len(rtn) > 0 and isinstance(rtn[0], _DTable):
-            rtn = [RDDTable.from_dtable(dtable=tbl, job_id=self.job_id) for tbl in rtn]
+            rtn = [DTable(job_id=self._job_id, dtable=tbl) for tbl in rtn]
         return rtn
 
     def _get_single(self, name, tag, idx):
         rtn = self._eggroll_federation.get(name=name, tag=tag, idx=idx)
         if isinstance(rtn, _DTable):
-            rtn = RDDTable.from_dtable(dtable=rtn, job_id=self.job_id)
+            rtn = DTable(job_id=self._job_id, dtable=rtn)
         return rtn
 
     # noinspection PyProtectedMember
@@ -57,7 +57,7 @@ class FederationRuntime(object):
 
     # noinspection PyProtectedMember
     def remote(self, obj, name: str, tag: str, role=None, idx=-1):
-        if isinstance(obj, RDDTable):
-            return self._eggroll_federation.remote(obj=obj.dtable(), name=name, tag=tag, role=role, idx=idx)
+        if isinstance(obj, DTable):
+            return self._eggroll_federation.remote(obj=obj._dtable(), name=name, tag=tag, role=role, idx=idx)
 
         return self._eggroll_federation.remote(obj=obj, name=name, tag=tag, role=role, idx=idx)
