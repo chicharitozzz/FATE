@@ -106,7 +106,7 @@ class RDDTable(Table):
 
         num_partition = self._dtable._partitions
         self._rdd = SparkContext.getOrCreate() \
-            .parallelize(storage_iterator, num_partition)
+            .parallelize(storage_iterator, num_partition).partitionBy(num_partition)
         self._rdd = materialize(self._rdd)
         return self._rdd
 

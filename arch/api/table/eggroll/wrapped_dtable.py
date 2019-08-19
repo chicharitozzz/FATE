@@ -35,7 +35,7 @@ class DTable(Table):
         self._job_id = job_id
 
     @log_elapsed
-    def save_as(self, name, namespace, partition=None, use_serialize=True):
+    def save_as(self, name, namespace, partition=None, use_serialize=True, **kwargs):
         return self._dtable.save_as(name=name, namespace=namespace, partition=partition, use_serialize=use_serialize)
 
     def put(self, k, v, use_serialize=True):
@@ -48,7 +48,7 @@ class DTable(Table):
         return self._dtable.get(k=k, use_serialize=use_serialize)
 
     @log_elapsed
-    def collect(self, min_chunk_size=0, use_serialize=True) -> list:
+    def collect(self, min_chunk_size=0, use_serialize=True, **kwargs) -> list:
         return self._dtable.collect(min_chunk_size=min_chunk_size, use_serialize=use_serialize)
 
     def delete(self, k, use_serialize=True):
@@ -58,10 +58,9 @@ class DTable(Table):
         return self._dtable.destroy()
 
     @log_elapsed
-    def count(self):
+    def count(self, **kwargs):
         return self._dtable.count()
 
-    @log_elapsed
     def put_if_absent(self, k, v, use_serialize=True):
         return self._dtable.put_if_absent(k=k, v=v, use_serialize=use_serialize)
 
@@ -80,11 +79,11 @@ class DTable(Table):
     """
 
     @log_elapsed
-    def map(self, func):
+    def map(self, func, **kwargs):
         return DTable(self._dtable.map(func), job_id=self._job_id)
 
     @log_elapsed
-    def mapValues(self, func):
+    def mapValues(self, func, **kwargs):
         return DTable(self._dtable.mapValues(func), job_id=self._job_id)
 
     @log_elapsed
@@ -92,33 +91,33 @@ class DTable(Table):
         return DTable(self._dtable.mapPartitions(func), job_id=self._job_id)
 
     @log_elapsed
-    def reduce(self, func):
+    def reduce(self, func, **kwargs):
         return self._dtable.reduce(func)
 
     @log_elapsed
-    def join(self, other, func):
+    def join(self, other, func, **kwargs):
         return DTable(self._dtable.join(other._dtable, func=func), job_id=self._job_id)
 
     @log_elapsed
-    def glom(self):
+    def glom(self, **kwargs):
         return DTable(self._dtable.glom(), job_id=self._job_id)
 
     @log_elapsed
-    def sample(self, fraction, seed=None):
+    def sample(self, fraction, seed=None, **kwargs):
         return DTable(self._dtable.sample(fraction=fraction, seed=seed), job_id=self._job_id)
 
     @log_elapsed
-    def subtractByKey(self, other):
+    def subtractByKey(self, other, **kwargs):
         return DTable(self._dtable.subtractByKey(other._dtable), job_id=self._job_id)
 
     @log_elapsed
-    def filter(self, func):
+    def filter(self, func, **kwargs):
         return DTable(self._dtable.filter(func), job_id=self._job_id)
 
     @log_elapsed
-    def union(self, other, func=lambda v1, v2: v1):
+    def union(self, other, func=lambda v1, v2: v1, **kwargs):
         return DTable(self._dtable.union(other._dtable, func=func), job_id=self._job_id)
 
     @log_elapsed
-    def flatMap(self, func):
+    def flatMap(self, func, **kwargs):
         return DTable(self._dtable.flatMap(func), job_id=self._job_id)

@@ -102,7 +102,7 @@ class RDDTable(Table):
 
     # noinspection PyProtectedMember
     @log_elapsed
-    def _rdd_from_dtable(self):
+    def _rdd_from_dtable(self, **kwargs):
         storage_iterator = self._dtable.collect(use_serialize=True)
         if self._dtable.count() <= 0:
             storage_iterator = []
@@ -125,7 +125,7 @@ class RDDTable(Table):
             return self._rdd_to_dtable()
 
     @log_elapsed
-    def _rdd_to_dtable(self):
+    def _rdd_to_dtable(self, **kwargs):
         self._dtable = self.save_as(name=self._name,
                                     namespace=self._namespace,
                                     partition=self._partitions,
@@ -136,64 +136,64 @@ class RDDTable(Table):
         return self._partitions
 
     @log_elapsed
-    def map(self, func):
+    def map(self, func, **kwargs):
         from arch.api.table.pyspark.cluster.rdd_func import _map
         rtn_rdd = _map(self.rdd(), func)
         return self._tmp_table_from_rdd(rtn_rdd)
 
     @log_elapsed
-    def mapValues(self, func):
+    def mapValues(self, func, **kwargs):
         from arch.api.table.pyspark.cluster.rdd_func import _map_value
         rtn_rdd = _map_value(self.rdd(), func)
         return self._tmp_table_from_rdd(rtn_rdd)
 
     @log_elapsed
-    def mapPartitions(self, func):
+    def mapPartitions(self, func, **kwargs):
         from arch.api.table.pyspark.cluster.rdd_func import _map_partitions
         rtn_rdd = _map_partitions(self.rdd(), func)
         return self._tmp_table_from_rdd(rtn_rdd)
 
     @log_elapsed
-    def reduce(self, func):
+    def reduce(self, func, **kwargs):
         return self.rdd().values().reduce(func)
 
     @log_elapsed
-    def join(self, other, func=None):
+    def join(self, other, func=None, **kwargs):
         from arch.api.table.pyspark.cluster.rdd_func import _join
         return self._tmp_table_from_rdd(_join(self.rdd(), other.rdd(), func))
 
     @log_elapsed
-    def glom(self):
+    def glom(self, **kwargs):
         from arch.api.table.pyspark.cluster.rdd_func import _glom
         return self._tmp_table_from_rdd(_glom(self.rdd()))
 
     @log_elapsed
-    def sample(self, fraction, seed=None):
+    def sample(self, fraction, seed=None, **kwargs):
         from arch.api.table.pyspark.cluster.rdd_func import _sample
         return self._tmp_table_from_rdd(_sample(self.rdd(), fraction, seed))
 
     @log_elapsed
-    def subtractByKey(self, other):
+    def subtractByKey(self, other, **kwargs):
         from arch.api.table.pyspark.cluster.rdd_func import _subtract_by_key
         return self._tmp_table_from_rdd(_subtract_by_key(self.rdd(), other.rdd))
 
     @log_elapsed
-    def filter(self, func):
+    def filter(self, func, **kwargs):
         from arch.api.table.pyspark.cluster.rdd_func import _filter
         return self._tmp_table_from_rdd(_filter(self.rdd(), func))
 
     @log_elapsed
-    def union(self, other, func=lambda v1, v2: v1):
+    def union(self, other, func=lambda v1, v2: v1, **kwargs):
         from arch.api.table.pyspark.cluster.rdd_func import _union
         return self._tmp_table_from_rdd(_union(self.rdd(), other.rdd, func))
 
     @log_elapsed
-    def flatMap(self, func):
+    def flatMap(self, func, **kwargs):
         from arch.api.table.pyspark.cluster.rdd_func import _flat_map
         return self._tmp_table_from_rdd(_flat_map(self.rdd(), func))
 
     @log_elapsed
-    def collect(self, min_chunk_size=0, use_serialize=True):
+    def collect(self, min_chunk_size=0, use_serialize=True, **kwargs):
         if self._dtable:
             return self._dtable.collect(min_chunk_size, use_serialize)
         else:
@@ -254,7 +254,7 @@ class RDDTable(Table):
             return self._rdd.count()
 
     @log_elapsed
-    def save_as(self, name, namespace, partition=None, use_serialize=True, persistent=True) -> 'RDDTable':
+    def save_as(self, name, namespace, partition=None, use_serialize=True, persistent=True, **kwargs) -> 'RDDTable':
         partition = partition or self._partitions
         if self._dtable:
             _dtable = self._dtable.save_as(name, namespace, partition, use_serialize=use_serialize)

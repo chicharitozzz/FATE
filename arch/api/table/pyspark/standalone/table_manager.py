@@ -67,7 +67,7 @@ class RDDTableManager(TableManger):
                     chunk_size,
                     in_place_computing):
         _iter = data if include_key else enumerate(data)
-        rdd = self._sc.parallelize(_iter, partition)
+        rdd = self._sc.parallelize(_iter, partition).partitionBy(partition)
         rdd = materialize(rdd)
         if namespace is None:
             namespace = self.job_id
