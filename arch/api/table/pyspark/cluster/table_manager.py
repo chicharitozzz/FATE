@@ -18,9 +18,9 @@ import uuid
 from typing import Iterable
 
 from arch.api.core import EggRollContext
-from arch.api.table.abc.table_manager import TableManager
 from arch.api.table.pyspark import materialize
 from arch.api.table.pyspark.cluster.rddtable import RDDTable
+from arch.api.table.table_manager import TableManager
 from arch.api.utils import file_utils
 
 
@@ -52,6 +52,7 @@ class RDDTableManager(TableManager):
                                            port=self._roll_port,
                                            eggroll_context=self._eggroll_context)).hex()
         sc.setLocalProperty(_EGGROLL_CLIENT, pickled_client)
+        TableManager.set_instance(self)
 
     def _init_eggroll(self, server_conf_path):
         """
@@ -77,9 +78,12 @@ class RDDTableManager(TableManager):
               namespace,
               partition,
               persistent,
-              in_place_computing):
+              in_place_computing,
+              create_if_missing,
+              error_if_exist):
         dtable = self._eggroll.table(name=name, namespace=namespace, partition=partition,
-                                     persistent=persistent, in_place_computing=in_place_computing)
+                                     persistent=persistent, in_place_computing=in_place_computing,
+                                     create_if_missing=create_if_missing, error_if_exist=error_if_exist)
         return RDDTable.from_dtable(job_id=self.job_id, dtable=dtable)
 
     def parallelize(self,
@@ -90,7 +94,9 @@ class RDDTableManager(TableManager):
                     include_key,
                     persistent,
                     chunk_size,
-                    in_place_computing):
+                    in_place_computing,
+                    create_if_missing,
+                    error_if_exist):
         _iter = data if include_key else enumerate(data)
         rdd = self._sc.parallelize(_iter, partition)
         rdd = materialize(rdd)

@@ -16,15 +16,13 @@
 
 
 import pickle
-
-from pyspark.taskcontext import TaskContext
-
-from arch.api.table.pyspark import _EGGROLL_CLIENT
-
 import uuid
 
 from pyspark import RDD
+from pyspark.taskcontext import TaskContext
 from pyspark.util import fail_on_stopiteration
+
+from arch.api.table.pyspark import _EGGROLL_CLIENT
 
 
 # noinspection PyProtectedMember

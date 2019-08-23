@@ -21,10 +21,9 @@ from typing import Iterable
 from arch.api import RuntimeInstance
 from arch.api import WorkMode, NamingPolicy
 from arch.api.core import EggRollContext
+from arch.api.table.table import Table
 from arch.api.utils import file_utils
 from arch.api.utils.log_utils import LoggerFactory
-from arch.api.table.abc.table import Table
-
 from arch.api.utils.profile_util import log_elapsed
 
 
@@ -44,15 +43,9 @@ def init(job_id=None,
 
     eggroll_context = EggRollContext(naming_policy=naming_policy)
     if mode == WorkMode.STANDALONE:
-        # from arch.api.standalone.eggroll import Standalone
-        # RuntimeInstance.EGGROLL = Standalone(job_id=job_id, eggroll_context=eggroll_context)
         from arch.api.table.eggroll.standalone.table_manager import DTableManager
         RuntimeInstance.EGGROLL = DTableManager(job_id=job_id, eggroll_context=eggroll_context)
     elif mode == WorkMode.CLUSTER:
-        # from arch.api.cluster.eggroll import _EggRoll
-        # from arch.api.cluster.eggroll import init as c_init
-        # c_init(job_id, eggroll_context=eggroll_context)
-        # RuntimeInstance.EGGROLL = _EggRoll.get_instance()
         from arch.api.table.eggroll.cluster.table_manager import DTableManager
         RuntimeInstance.EGGROLL = DTableManager(job_id=job_id, eggroll_context=eggroll_context)
     elif mode == WorkMode.SPARK_LOCAL:
@@ -73,7 +66,9 @@ def table(name, namespace, partition=1, persistent=True, create_if_missing=True,
                                          namespace=namespace,
                                          partition=partition,
                                          persistent=persistent,
-                                         in_place_computing=in_place_computing)
+                                         in_place_computing=in_place_computing,
+                                         create_if_missing=create_if_missing,
+                                         error_if_exist=error_if_exist)
 
 
 @log_elapsed
@@ -83,7 +78,9 @@ def parallelize(data: Iterable, include_key=False, name=None, partition=1, names
                                                namespace=namespace,
                                                persistent=persistent,
                                                chunk_size=chunk_size,
-                                               in_place_computing=in_place_computing)
+                                               in_place_computing=in_place_computing,
+                                               create_if_missing=create_if_missing,
+                                               error_if_exist=error_if_exist)
 
 
 def cleanup(name, namespace, persistent=False):
@@ -97,3 +94,89 @@ def generateUniqueId():
 
 def get_job_id():
     return RuntimeInstance.EGGROLL.job_id
+
+
+def get_data_table(name, namespace):
+    """
+    return data table instance by table name and table name space
+    :param name: table name of data table
+    :param namespace: table name space of data table
+    :return:
+        data table instance
+    """
+    return RuntimeInstance.EGGROLL.get_data_table(name=name, namespace=namespace)
+
+
+def save_data_table_meta(kv, data_table_name, data_table_namespace):
+    """
+    save data table meta information
+    :param kv: v should be serialized by JSON
+    :param data_table_name: table name of this data table
+    :param data_table_namespace: table name of this data table
+    :return:
+    """
+    return RuntimeInstance.EGGROLL.save_data_table_meta(kv=kv,
+                                                        data_table_name=data_table_name,
+                                                        data_table_namespace=data_table_namespace)
+
+
+def get_data_table_meta(key, data_table_name, data_table_namespace):
+    """
+    get data table meta information
+    :param key:
+    :param data_table_name: table name of this data table
+    :param data_table_namespace: table name of this data table
+    :return:
+    """
+    return RuntimeInstance.EGGROLL.get_data_table_meta(key=key,
+                                                       data_table_name=data_table_name,
+                                                       data_table_namespace=data_table_namespace)
+
+
+def get_data_table_metas(data_table_name, data_table_namespace):
+    """
+    get data table meta information
+    :param data_table_name: table name of this data table
+    :param data_table_namespace: table name of this data table
+    :return:
+    """
+    return RuntimeInstance.EGGROLL.get_data_table_metas(data_table_name=data_table_name,
+                                                        data_table_namespace=data_table_namespace)
+
+
+def clean_tables(namespace, regex_string='*'):
+    RuntimeInstance.EGGROLL.clean_table(namespace=namespace, regex_string=regex_string)
+
+
+def save_data(kv_data: Iterable,
+              name,
+              namespace,
+              partition=1,
+              persistent: bool = True,
+              create_if_missing=True,
+              error_if_exist=False,
+              in_version: bool = False,
+              version_log=None):
+    """
+    save data into data table
+    :param kv_data:
+    :param name: table name of data table
+    :param namespace: table namespace of data table
+    :param partition: number of partition
+    :param persistent
+    :param create_if_missing:
+    :param error_if_exist:
+    :param in_version:
+    :param version_log
+    :return:
+        data table instance
+    """
+    return RuntimeInstance.EGGROLL.save_data(kv_data=kv_data,
+                                             name=name,
+                                             namespace=namespace,
+                                             partition=partition,
+                                             persistent=persistent,
+                                             create_if_missing=create_if_missing,
+                                             error_if_exist=error_if_exist,
+                                             in_version=in_version,
+                                             version_log=version_log)

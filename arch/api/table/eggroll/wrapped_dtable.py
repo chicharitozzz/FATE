@@ -19,7 +19,7 @@ from typing import Iterable
 
 # noinspection PyProtectedMember
 from arch.api.standalone.eggroll import _DTable
-from arch.api.table.abc.table import Table
+from arch.api.table.table import Table
 from arch.api.utils.profile_util import log_elapsed
 
 
@@ -33,6 +33,12 @@ class DTable(Table):
         self._name = self._dtable._name or str(uuid.uuid1())
         self._namespace = self._dtable._namespace
         self._job_id = job_id
+
+    def get_name(self):
+        return self._name
+
+    def get_namespace(self):
+        return self._namespace
 
     @log_elapsed
     def save_as(self, name, namespace, partition=None, use_serialize=True, **kwargs):

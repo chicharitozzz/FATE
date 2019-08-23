@@ -21,9 +21,9 @@ from pyspark import SparkContext, RDD
 
 # noinspection PyProtectedMember
 from arch.api.cluster.eggroll import _DTable as DTable
-from arch.api.table.abc.table import Table
 from arch.api.table.pyspark import _RDD_ATTR_NAME
 from arch.api.table.pyspark import materialize, STORAGE_LEVEL
+from arch.api.table.table import Table
 from arch.api.utils.profile_util import log_elapsed
 
 
@@ -58,6 +58,12 @@ class RDDTable(Table):
         self._name = name or str(uuid.uuid1())
         self._namespace = namespace
         self._job_id = job_id
+
+    def get_name(self):
+        return self._name
+
+    def get_namespace(self):
+        return self._namespace
 
     def __str__(self):
         return f"{self._namespace}, {self._name}, {self._dtable}"
@@ -102,7 +108,7 @@ class RDDTable(Table):
 
     # noinspection PyProtectedMember
     @log_elapsed
-    def _rdd_from_dtable(self, **kwargs):
+    def _rdd_from_dtable(self):
         storage_iterator = self._dtable.collect(use_serialize=True)
         if self._dtable.count() <= 0:
             storage_iterator = []
@@ -157,10 +163,16 @@ class RDDTable(Table):
     def reduce(self, func, **kwargs):
         return self.rdd().values().reduce(func)
 
-    @log_elapsed
     def join(self, other, func=None, **kwargs):
-        from arch.api.table.pyspark.cluster.rdd_func import _join
-        return self._tmp_table_from_rdd(_join(self.rdd(), other.rdd(), func))
+        rdd1 = self.rdd()
+        rdd2 = other.rdd()
+
+        @log_elapsed
+        def _join(rdda, rddb, **kwargs):
+            from arch.api.table.pyspark.cluster.rdd_func import _join
+            return self._tmp_table_from_rdd(_join(rdda, rddb, func))
+
+        return _join(rdd1, rdd2, **kwargs)
 
     @log_elapsed
     def glom(self, **kwargs):
@@ -247,7 +259,7 @@ class RDDTable(Table):
     def first(self, keysOnly=False, use_serialize=True):
         return self.take(1, keysOnly, use_serialize)[0]
 
-    def count(self):
+    def count(self, **kwargs):
         if self._dtable:
             return self._dtable.count()
         else:

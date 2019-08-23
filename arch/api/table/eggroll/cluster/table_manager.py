@@ -18,8 +18,8 @@ from typing import Iterable
 
 # noinspection PyProtectedMember
 from arch.api.cluster.eggroll import init, _EggRoll
-from arch.api.table.abc.table_manager import TableManager as TableManger
 from arch.api.table.eggroll.wrapped_dtable import DTable
+from arch.api.table.table_manager import TableManager as TableManger
 
 
 # noinspection PyProtectedMember
@@ -32,15 +32,19 @@ class DTableManager(TableManger):
         init(job_id=job_id, server_conf_path=server_conf_path, eggroll_context=eggroll_context)
         self._eggroll: _EggRoll = _EggRoll.instance
         self.job_id = job_id
+        TableManger.set_instance(self)
 
     def table(self,
               name,
               namespace,
               partition,
               persistent,
-              in_place_computing):
+              in_place_computing,
+              create_if_missing,
+              error_if_exist):
         dtable = self._eggroll.table(name=name, namespace=namespace, partition=partition,
-                                     persistent=persistent, in_place_computing=in_place_computing)
+                                     persistent=persistent, in_place_computing=in_place_computing,
+                                     create_if_missing=create_if_missing, error_if_exist=error_if_exist)
         return DTable(dtable=dtable, job_id=self.job_id)
 
     def parallelize(self,
@@ -51,7 +55,9 @@ class DTableManager(TableManger):
                     namespace,
                     persistent,
                     chunk_size,
-                    in_place_computing):
+                    in_place_computing,
+                    create_if_missing,
+                    error_if_exist):
         dtable = self._eggroll.parallelize(data=data,
                                            include_key=include_key,
                                            name=name,
@@ -59,7 +65,9 @@ class DTableManager(TableManger):
                                            namespace=namespace,
                                            persistent=persistent,
                                            chunk_size=chunk_size,
-                                           in_place_computing=in_place_computing)
+                                           in_place_computing=in_place_computing,
+                                           create_if_missing=create_if_missing,
+                                           error_if_exist=error_if_exist)
 
         rdd_inst = DTable(dtable, job_id=self.job_id)
 

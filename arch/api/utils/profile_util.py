@@ -26,7 +26,7 @@ def log_elapsed(func):
 
     def _fn(*args, **kwargs):
         t = time.time()
-        name = f"{func_name}#{kwargs['tag']}" if 'tag' in kwargs else func_name
+        name = f"{func_name}#{kwargs['func_tag']}" if 'func_tag' in kwargs else func_name
         rtn = func(*args, **kwargs)
         LOGGER.debug(f"{name} takes {time.time() - t}s")
         return rtn

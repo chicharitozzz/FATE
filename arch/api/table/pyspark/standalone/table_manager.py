@@ -19,10 +19,10 @@ from typing import Iterable
 from pyspark import SparkContext
 
 from arch.api.standalone.eggroll import Standalone
-from arch.api.table.abc.table_manager import TableManager as TableManger
 from arch.api.table.pyspark import materialize
 from arch.api.table.pyspark.standalone import _to_serializable
 from arch.api.table.pyspark.standalone.rddtable import RDDTable
+from arch.api.table.table_manager import TableManager as TableManger
 
 
 # noinspection PyProtectedMember
@@ -45,16 +45,19 @@ class RDDTableManager(TableManger):
         from arch.api.table.pyspark import _EGGROLL_CLIENT
         pickled_client = pickle.dumps(self._eggroll).hex()
         sc.setLocalProperty(_EGGROLL_CLIENT, pickled_client)
+        TableManger.set_instance(self)
 
     def table(self,
               name,
               namespace,
               partition,
               persistent,
-              in_place_computing):
-
+              in_place_computing,
+              create_if_missing,
+              error_if_exist):
         dtable = self._eggroll.table(name=name, namespace=namespace, partition=partition,
-                                     persistent=persistent, in_place_computing=in_place_computing)
+                                     persistent=persistent, in_place_computing=in_place_computing,
+                                     create_if_missing=create_if_missing, error_if_exist=error_if_exist)
         return RDDTable.from_dtable(job_id=self.job_id, dtable=dtable)
 
     def parallelize(self,
@@ -65,7 +68,9 @@ class RDDTableManager(TableManger):
                     namespace,
                     persistent,
                     chunk_size,
-                    in_place_computing):
+                    in_place_computing,
+                    create_if_missing,
+                    error_if_exist):
         _iter = data if include_key else enumerate(data)
         rdd = self._sc.parallelize(_iter, partition).partitionBy(partition)
         rdd = materialize(rdd)

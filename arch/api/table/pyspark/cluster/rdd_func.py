@@ -54,7 +54,6 @@ def _map(rdd: RDD, func):
         return func(x[0], x[1])
 
     def _func(_, iterator):
-        _get_or_create_eggroll_client()
         return map(fail_on_stopiteration(_fn), iterator)
 
     return rdd.mapPartitionsWithIndex(_func, preservesPartitioning=False)
@@ -65,7 +64,6 @@ def _map_value(rdd: RDD, func):
         return x[0], func(x[1])
 
     def _func(_, iterator):
-        _get_or_create_eggroll_client()
         return map(fail_on_stopiteration(_fn), iterator)
 
     return rdd.mapPartitionsWithIndex(_func, preservesPartitioning=True)
@@ -73,7 +71,6 @@ def _map_value(rdd: RDD, func):
 
 def _map_partitions(rdd: RDD, func):
     def _func(_, iterator):
-        _get_or_create_eggroll_client()
         return [(str(uuid.uuid1()), func(iterator))]
 
     return rdd.mapPartitionsWithIndex(_func, preservesPartitioning=False)
@@ -89,7 +86,6 @@ def _join(rdd: RDD, other: RDD, func=None):
 
 def _glom(rdd: RDD):
     def _func(_, iterator):
-        _get_or_create_eggroll_client()
         yield list(iterator)
 
     return rdd.mapPartitionsWithIndex(_func)
@@ -102,7 +98,6 @@ def _sample(rdd: RDD, fraction: float, seed: int):
     _sample_func = RDDSampler(False, fraction, seed).func
 
     def _func(split, iterator):
-        _get_or_create_eggroll_client()
         return _sample_func(split, iterator)
 
     return rdd.mapPartitionsWithIndex(_func, preservesPartitioning=True)
@@ -113,7 +108,6 @@ def _filter(rdd: RDD, func):
         return func(x[0], x[1])
 
     def _func(_, iterator):
-        _get_or_create_eggroll_client()
         return filter(fail_on_stopiteration(_fn), iterator)
 
     return rdd.mapPartitionsWithIndex(_func, preservesPartitioning=True)
