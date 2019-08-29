@@ -206,8 +206,12 @@ class RDDTable(Table):
     storage api
     """
 
-    def put(self, k, v, use_serialize=True):
-        rtn = self.dtable().put(k, v, use_serialize)
+    def put(self, k, v, use_serialize=True, maybe_large_value=False):
+        if not maybe_large_value:
+            rtn = self.dtable().put(k, v, use_serialize)
+        else:
+            from arch.api.table.storage_enhance import split_put
+            rtn = split_put(k, v, use_serialize=use_serialize, put_call_back_func=self.dtable().put)
         self._rdd = None
         return rtn
 
@@ -216,8 +220,13 @@ class RDDTable(Table):
         self._rdd = None
         return rtn
 
-    def get(self, k, use_serialize=True):
-        return self.dtable().get(k, use_serialize)
+    def get(self, k, use_serialize=True, maybe_large_value=False):
+        if not maybe_large_value:
+            return self.dtable().get(k, use_serialize)
+        else:
+            from arch.api.table.storage_enhance import split_get
+            return split_get(k=k, use_serialize=use_serialize, get_call_back_func=self.dtable().get)
+
 
     def delete(self, k, use_serialize=True):
         rtn = self.dtable().delete(k, use_serialize)

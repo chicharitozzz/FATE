@@ -37,7 +37,7 @@ class Table(object):
         pass
 
     @abc.abstractmethod
-    def put(self, k, v, use_serialize=True):
+    def put(self, k, v, use_serialize=True, maybe_large_value=False):
         pass
 
     @abc.abstractmethod
@@ -45,7 +45,7 @@ class Table(object):
         pass
 
     @abc.abstractmethod
-    def get(self, k, use_serialize=True):
+    def get(self, k, use_serialize=True, maybe_large_value=False):
         pass
 
     @abc.abstractmethod
